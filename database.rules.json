@@ -1,0 +1,29 @@
+{
+  "rules": {
+    // Authenticated users can read/monitor data
+    ".read": "auth != null",
+
+    "attendance_logs": {
+      // Authenticated staff can log attendance
+      ".write": "auth != null"
+    },
+
+    "infrastructure": {
+      "door_lock": {
+        // Only a user authenticated with 'hod' role (checked against RTDB/users node) can toggle
+        ".write": "root.child('users').child(auth.uid).child('role').val() == 'hod'"
+      },
+      "automation": {
+        // Toggle lights and fans status
+        ".write": "root.child('users').child(auth.uid).child('role').val() == 'hod'"
+      }
+    },
+
+    "users": {
+      // Self-read for authenticated users
+      "$uid": {
+        ".read": "auth.uid == $uid"
+      }
+    }
+  }
+}

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Classroom | Fully Integrated</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(79, 70, 229, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Auth Screen */
+        .auth-wrapper {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+
+        .auth-card h1 {
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .auth-card p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #f5f3ff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        nav {
+            width: 280px;
+            background: var(--card);
+            border-right: 1px solid var(--border);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .nav-item {
+            padding: 14px 20px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item.active {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            color: var(--danger);
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        main {
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* Dashboard Cards */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-val {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        /* Attendance Table */
+        .table-wrap {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-top: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .present {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Controls */
+        .control-panel {
+            margin-top: 32px;
+            border-top: 1px solid var(--border);
+            padding-top: 32px;
+        }
+
+        .lock-btn {
+            width: 100%;
+            padding: 20px;
+            border-radius: 16px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .locked {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 2px solid #fecaca;
+        }
+
+        .unlocked {
+            background: #dcfce7;
+            color: #166534;
+            border: 2px solid #bbf7d0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                width: 100%;
+                height: auto;
+                position: fixed;
+                bottom: 0;
+                z-index: 100;
+                flex-direction: row;
+                border-right: none;
+                border-top: 1px solid var(--border);
+                padding: 10px;
+            }
+
+            .nav-item span,
+            .logout-btn {
+                display: none;
+            }
+
+            .app-container {
+                flex-direction: column;
+            }
+
+            main {
+                margin-bottom: 80px;
+                padding: 20px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="font-weight: 600; color: var(--text-muted);">Syncing System Data...</p>
+    </div>
+
+    <!-- Auth Section -->
+    <div id="auth-section" class="auth-wrapper">
+        <div class="auth-card fade-in">
+            <h1>ClassGuard AI</h1>
+            <p>Smart Monitoring Secure Access</p>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="admin@school.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="handleAuth()">Login to Portal</button>
+            <p id="auth-error" style="color: var(--danger); font-size: 0.8rem; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <!-- Main App Section -->
+    <div id="main-app" class="app-container hidden">
+        <nav>
+            <h2 style="color: var(--primary); margin-bottom: 30px; padding: 0 10px;">CG Portal</h2>
+            <div class="nav-item active" onclick="switchTab('dash')">📊 <span>Dashboard</span></div>
+            <div class="nav-item" onclick="switchTab('records')">📋 <span>Attendance</span></div>
+            <div class="logout-btn" onclick="logout()">Sign Out</div>
+        </nav>
+
+        <main>
+            <header>
+                <div>
+                    <h2 id="page-title">Monitoring Dashboard</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time Secure Sync</p>
+                </div>
+                <div id="user-role-badge" class="badge">Faculty</div>
+            </header>
+
+            <div id="view-dash" class="fade-in">
+                <div class="grid">
+                    <div class="card">
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Total Students</div>
+                        <div class="stat-val" id="total-ref">60</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Present Count</div>
+                        <div class="stat-val" style="color: var(--success);" id="present-ref">0</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Absent Count</div>
+                        <div class="stat-val" style="color: var(--danger);" id="absent-ref">0</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Attendance Rate</div>
+                        <div class="stat-val" id="rate-ref">0%</div>
+                    </div>
+                </div>
+
+                <!-- Automation Panel -->
+                <div id="automation-panel" class="control-panel">
+                    <h3 style="margin-bottom: 20px;">Infrastructure Controls</h3>
+                    <div class="grid">
+                        <div class="card">
+                            <p style="margin-bottom: 15px; font-weight: 500;">Classroom Door Security</p>
+                            <button id="lock-btn" class="lock-btn" onclick="toggleLock()">Loading State...</button>
+                            <p id="auto-lock-timer"
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; text-align: center; height: 1rem;">
+                            </p>
+                        </div>
+                        <div class="card">
+                            <p style="margin-bottom: 15px; font-weight: 500;">Environment Automation</p>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <button id="lights-btn" class="btn"
+                                    style="background: #f1f5f9; border: 1px solid var(--border); transition: 0.3s; text-align: left; padding: 12px 16px;"
+                                    onclick="toggleDevice('lights')">
+                                    💡 Lights: <strong id="lights-status">...</strong>
+                                </button>
+                                <button id="fans-btn" class="btn"
+                                    style="background: #f1f5f9; border: 1px solid var(--border); transition: 0.3s; text-align: left; padding: 12px 16px;"
+                                    onclick="toggleDevice('fans')">
+                                    ❄️ Fans: <strong id="fans-status">...</strong>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-records" class="hidden fade-in">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>In-Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-body">
+                            <!-- Real-time logs -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // CONFIGURATION: Replace with your actual Firebase project config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDo78quCXesOonHQZbuGN1zwfne3UXaSE",
+            authDomain: "ai-enabled-smart-classroom.firebaseapp.com",
+            projectId: "ai-enabled-smart-classroom",
+            storageBucket: "ai-enabled-smart-classroom.firebasestorage.app",
+            messagingSenderId: "83194888097",
+            appId: "1:83194888097:web:5548dddd9aa32ce72715e0",
+            databaseURL: "https://ai-enabled-smart-classroom-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const rtdb = firebase.database();
+
+        let userData = null;
+        let attendanceLoaded = false;
+        let infraLoaded = false;
+        let autoLockInterval = null;
+        const AUTO_LOCK_SECONDS = 240; // 4 Minutes
+
+        // Hide overlay initially
+        document.getElementById('loading-overlay').style.display = 'none';
+
+        // AUTHENTICATION
+        async function handleAuth() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('auth-error');
+            const loginBtn = document.querySelector('.btn-primary');
+
+            if (!email || !password) {
+                errorEl.innerText = "Please enter credentials.";
+                return;
+            }
+
+            loginBtn.innerText = "Authenticating...";
+            loginBtn.disabled = true;
+
+            try {
+                const results = await auth.signInWithEmailAndPassword(email, password);
+                const userDoc = await db.collection('users').doc(results.user.uid).get();
+                if (userDoc.exists) {
+                    initApp(userDoc.data());
+                } else {
+                    errorEl.innerText = "Profile not found.";
+                    resetBtn();
+                }
+            } catch (err) {
+                errorEl.innerText = err.message;
+                resetBtn();
+            }
+        }
+
+        function resetBtn() {
+            const btn = document.querySelector('.btn-primary');
+            btn.innerText = "Login to Portal";
+            btn.disabled = false;
+        }
+
+        function initApp(profile) {
+            userData = profile;
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-role-badge').innerText = profile.role.toUpperCase();
+
+            // Show loader while syncing
+            const overlay = document.getElementById('loading-overlay');
+            overlay.style.display = 'flex';
+
+            // Safety check: Don't let the overlay hang forever
+            setTimeout(() => {
+                if (overlay.style.display !== 'none') {
+                    console.warn("Loading timeout: Data sync took too long. Forcing entry.");
+                    overlay.style.display = 'none';
+                }
+            }, 5000);
+
+            // Start Syncing Realtime Data
+            syncAttendance();
+            syncInfrastructure();
+        }
+
+        // ATTENDANCE LOGIC (60 Students)
+        function syncAttendance() {
+            const totalStudents = 60;
+            const listRef = rtdb.ref('attendance_logs');
+
+            listRef.on('value', (snapshot) => {
+                const data = snapshot.val() || {};
+                const presentRecords = Object.values(data);
+
+                // Auto-generate missing records up to 60
+                const combinedData = [...presentRecords];
+                const gaps = totalStudents - presentRecords.length;
+
+                if (gaps > 0) {
+                    for (let i = 1; i <= gaps; i++) {
+                        combinedData.push({
+                            name: `Student #${presentRecords.length + i}`,
+                            time: "--",
+                            status: "Absent"
+                        });
+                    }
+                }
+
+                renderAttendanceStats(combinedData);
+                renderAttendanceTable(combinedData);
+
+                attendanceLoaded = true;
+                checkLoadingState();
+            });
+        }
+
+        function renderAttendanceStats(data) {
+            const total = 60;
+            const present = data.filter(s => s.status === 'Present').length;
+            const absent = total - present;
+
+            document.getElementById('total-ref').innerText = total;
+            document.getElementById('present-ref').innerText = present;
+            document.getElementById('absent-ref').innerText = absent;
+            document.getElementById('rate-ref').innerText = `${Math.round((present / total) * 100)}%`;
+        }
+
+        function renderAttendanceTable(data) {
+            const tbody = document.getElementById('attendance-body');
+            // Remove 'fade-in' from every row to prevent rendering lag on updates
+            tbody.innerHTML = data.map(s => `
+                <tr>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.time}</td>
+                    <td><span class="status ${s.status === 'Present' ? 'present' : 'absent'}">${s.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // State management for anti-flicker and reliability
+        let controlCooldowns = {
+            door_lock: { time: 0, target: null },
+            lights: { time: 0, target: null },
+            fans: { time: 0, target: null }
+        };
+
+        let currentInfraState = {
+            door_lock: null,
+            lights: null,
+            fans: null
+        };
+
+        // INFRASTRUCTURE LOGIC
+        function syncInfrastructure() {
+            const infraRef = rtdb.ref('infrastructure');
+            infraRef.on('value', (snapshot) => {
+                const state = snapshot.val();
+                if (!state) return;
+
+                const now = Date.now();
+
+                // SYNC DOOR LOCK
+                if (state.hasOwnProperty('door_lock')) {
+                    const lockBtn = document.getElementById('lock-btn');
+                    const doorVal = !!state.door_lock;
+                    currentInfraState.door_lock = doorVal;
+                    const cd = controlCooldowns.door_lock;
+
+                    if ((now - cd.time > 1500) || doorVal === cd.target) {
+                        lockBtn.innerText = doorVal ? "Door Locked" : "Door Unlocked";
+                        lockBtn.className = `lock-btn ${doorVal ? 'locked' : 'unlocked'}`;
+                        lockBtn.disabled = false; // RE-ENABLE ONLY ON SYNC
+
+                        if (doorVal) stopAutoLockTimer();
+                        else if (userData.role === 'hod') startAutoLockTimer();
+                        cd.target = null; // reset target
+                    }
+                }
+
+                if (state.automation) {
+                    // SYNC LIGHTS
+                    if (state.automation.hasOwnProperty('lights')) {
+                        const lBtn = document.getElementById('lights-btn');
+                        const lStatus = document.getElementById('lights-status');
+                        const lightsVal = !!state.automation.lights;
+                        currentInfraState.lights = lightsVal;
+                        const cd = controlCooldowns.lights;
+
+                        if ((now - cd.time > 1500) || lightsVal === cd.target) {
+                            lStatus.innerText = lightsVal ? "ON" : "OFF";
+                            lStatus.style.color = lightsVal ? "var(--success)" : "var(--danger)";
+                            lBtn.style.borderColor = lightsVal ? "var(--success)" : "var(--border)";
+                            lBtn.disabled = false;
+                            cd.target = null;
+                        }
+                    }
+
+                    // SYNC FANS
+                    if (state.automation.hasOwnProperty('fans')) {
+                        const fBtn = document.getElementById('fans-btn');
+                        const fStatus = document.getElementById('fans-status');
+                        const fansVal = !!state.automation.fans;
+                        currentInfraState.fans = fansVal;
+                        const cd = controlCooldowns.fans;
+
+                        if ((now - cd.time > 1500) || fansVal === cd.target) {
+                            fStatus.innerText = fansVal ? "ON" : "OFF";
+                            fStatus.style.color = fansVal ? "var(--success)" : "var(--danger)";
+                            fBtn.style.borderColor = fansVal ? "var(--success)" : "var(--border)";
+                            fBtn.disabled = false;
+                            cd.target = null;
+                        }
+                    }
+                }
+
+                infraLoaded = true;
+                checkLoadingState();
+            });
+        }
+
+        async function toggleLock() {
+            if (userData.role !== 'hod') return;
+
+            const lockBtn = document.getElementById('lock-btn');
+            // USE CURRENT STATE NOT DOM
+            const targetState = !currentInfraState.door_lock;
+
+            // Set lockout
+            controlCooldowns.door_lock = { time: Date.now(), target: targetState };
+            lockBtn.innerText = targetState ? "Locking..." : "Unlocking...";
+            lockBtn.disabled = true;
+
+            if (targetState) stopAutoLockTimer();
+
+            try {
+                await rtdb.ref('infrastructure/door_lock').set(targetState);
+            } catch (err) {
+                alert("Operation failed");
+                controlCooldowns.door_lock.time = 0;
+                lockBtn.disabled = false;
+            }
+
+            // Safety release
+            setTimeout(() => { if (lockBtn.disabled) lockBtn.disabled = false; }, 1500);
+        }
+
+        function startAutoLockTimer() {
+            if (autoLockInterval) return;
+            let timeLeft = AUTO_LOCK_SECONDS;
+            const timerEl = document.getElementById('auto-lock-timer');
+            autoLockInterval = setInterval(async () => {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                timerEl.innerText = `Auto-locking in ${mins}:${secs.toString().padStart(2, '0')}`;
+                if (timeLeft <= 0) {
+                    stopAutoLockTimer();
+                    await rtdb.ref('infrastructure/door_lock').set(true);
+                }
+            }, 1000);
+        }
+
+        function stopAutoLockTimer() {
+            if (autoLockInterval) {
+                clearInterval(autoLockInterval);
+                autoLockInterval = null;
+            }
+            const el = document.getElementById('auto-lock-timer');
+            if (el) el.innerText = "";
+        }
+
+        async function toggleDevice(type) {
+            if (userData.role !== 'hod') return;
+
+            const btn = document.getElementById(`${type}-btn`);
+            const statusEl = document.getElementById(`${type}-status`);
+            const targetState = !currentInfraState[type];
+
+            // Set lockout
+            controlCooldowns[type] = { time: Date.now(), target: targetState };
+            statusEl.innerText = "...";
+            btn.disabled = true;
+
+            try {
+                await rtdb.ref(`infrastructure/automation/${type}`).set(targetState);
+            } catch (err) {
+                alert(`${type} toggle failed`);
+                controlCooldowns[type].time = 0;
+                btn.disabled = false;
+            }
+
+            // Safety release
+            setTimeout(() => { if (btn.disabled) btn.disabled = false; }, 3000);
+        }
+
+        function checkLoadingState() {
+            if (attendanceLoaded && infraLoaded) {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) overlay.style.display = 'none';
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('view-dash').classList.toggle('hidden', tabId !== 'dash');
+            document.getElementById('view-records').classList.toggle('hidden', tabId !== 'records');
+            document.getElementById('page-title').innerText = tabId === 'dash' ? 'Monitoring Dashboard' : 'Attendance Records';
+        }
+
+        function logout() {
+            auth.signOut().then(() => location.reload());
+        }
+    </script>
+</body>
+
+</html>

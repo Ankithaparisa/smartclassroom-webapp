@@ -1,0 +1,38 @@
+{
+    "users": {
+        "HOD_USER_UID_AFTER_AUTH": {
+            "role": "hod"
+        },
+        "FACULTY_USER_UID_AFTER_AUTH": {
+            "role": "faculty"
+        }
+    },
+    "attendance_logs": {
+        "-N_log_001": {
+            "name": "Arjun Singh",
+            "time": "09:00 AM",
+            "status": "Present"
+        },
+        "-N_log_002": {
+            "name": "Priya Sharma",
+            "time": "08:55 AM",
+            "status": "Present"
+        },
+        "-N_log_003": {
+            "name": "Rahul Verma",
+            "time": "--",
+            "status": "Absent"
+        }
+    },
+    "infrastructure": {
+        "door_lock": true,
+        "automation": {
+            "environment_active": true,
+            "lights": true,
+            "fans": true
+        },
+        "alerts": {
+            "last_alert": "Motion detected in Corridor B. Student identified outside classroom 402."
+        }
+    }
+}
